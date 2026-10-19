@@ -1,0 +1,22 @@
+{
+  "name": "golden-hour-finder",
+  "version": "0.1.0",
+  "description": "Chrome extension showing golden hour, blue hour, sunrise and sunset times for photographers.",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "zip": "npm run build && cd dist && zip -r ../golden-hour-finder.zip ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "suncalc": "^2.1.1",
+    "tz-lookup": "^6.1.25"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "private": true,
+  "type": "module"
+}
