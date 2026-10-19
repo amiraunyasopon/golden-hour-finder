@@ -71,13 +71,6 @@ function setLocation(loc) {
 
 // ---------- rendering ----------
 
-const SOURCE_LABELS = {
-  pin: "From Google Maps",
-  view: "Map view",
-  query: "From Google Maps",
-  device: "Device location",
-};
-
 function showError(message) {
   const el = $("error");
   el.textContent = message;
@@ -180,10 +173,6 @@ function render() {
 
   $("place").textContent = location.name || "Selected location";
   $("meta").textContent = `${formatCoords(lat, lng)} · ${tz}`;
-  const badge = $("source");
-  badge.textContent = SOURCE_LABELS[location.source] || "";
-  badge.hidden = !badge.textContent;
-
   const times = getLightTimes(lat, lng, now);
   renderStatus(getStatus(lat, lng, now), now, tz);
   renderTimeline(times, now, tz);
