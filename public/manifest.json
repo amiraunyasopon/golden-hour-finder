@@ -5,7 +5,10 @@
   "description": "See golden hour, blue hour, sunrise, and sunset times for your location or a place in Google Maps.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "golden-hour-finder@amiraunyasopon"
+      "id": "golden-hour-finder@amiraunyasopon",
+      "data_collection_permissions": {
+        "required": ["locationInfo"]
+      }
     }
   },
   "action": {
