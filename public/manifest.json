@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Golden Hour Finder",
-  "version": "0.1.0",
-  "description": "See golden hour, blue hour, sunrise and sunset times for your location or any place on Google Maps.",
+  "version": "1.0.0",
+  "description": "See golden hour, blue hour, sunrise, and sunset times for your location or a place in Google Maps.",
   "action": {
     "default_title": "Golden Hour Finder",
     "default_popup": "popup/popup.html",

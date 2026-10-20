@@ -82,7 +82,7 @@ async function reverseGeocode(lat, lng) {
     const address = data.address || {};
     const city = address.city || address.town || address.village || address.municipality || address.suburb;
     const region = address["ISO3166-2-lvl4"]?.replace(/^US-/, "") || address.country_code?.toUpperCase();
-    return city ? (region ? `${city}, ${region}` : city) : null;
+    return city ? { name: region ? `${city}, ${region}` : city, source: "OpenStreetMap" } : null;
   } catch {
     return null;
   }
@@ -289,10 +289,13 @@ function render() {
 async function useDevice() {
   try {
     const loc = await deviceLocation();
-    loc.name = await reverseGeocode(loc.lat, loc.lng);
-    if (!loc.name) {
+    const place = await reverseGeocode(loc.lat, loc.lng);
+    loc.name = place?.name;
+    if (!place) {
       loc.name = "Your location";
       loc.message = "Place name unavailable offline.";
+    } else {
+      loc.message = "Place name from OpenStreetMap.";
     }
     await save(loc);
     setLocation(loc);
