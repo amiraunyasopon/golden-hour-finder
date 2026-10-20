@@ -13,8 +13,8 @@ times for the location currently open in Google Maps.
 
 ## Device coordinates
 Device coordinates are used locally for solar calculations. When device
-location is enabled, the extension optionally sends them to BigDataCloud to
-display an approximate place name; if that lookup is unavailable, the popup
+location is enabled, the extension optionally sends them to OpenStreetMap's
+Nominatim service to display an approximate place name; if that lookup is unavailable, the popup
 shows a friendly fallback instead.
 
 ## Planned expansions

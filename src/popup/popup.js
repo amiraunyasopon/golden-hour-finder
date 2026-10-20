@@ -74,14 +74,15 @@ function deviceLocation() {
 }
 
 async function reverseGeocode(lat, lng) {
-  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=en`;
   try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = await response.json();
-    const city = data.city || data.locality || data.principalSubdivision;
-    const region = data.principalSubdivisionCode?.replace(/^US-/, "") || data.countryCode;
-    return city && region ? `${city}, ${region}` : city || null;
+    const address = data.address || {};
+    const city = address.city || address.town || address.village || address.municipality || address.suburb;
+    const region = address["ISO3166-2-lvl4"]?.replace(/^US-/, "") || address.country_code?.toUpperCase();
+    return city ? (region ? `${city}, ${region}` : city) : null;
   } catch {
     return null;
   }
