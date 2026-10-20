@@ -10,7 +10,7 @@ import {
 const $ = (id) => document.getElementById(id);
 const hasChrome = typeof chrome !== "undefined" && chrome.storage;
 
-let location = null; // { lat, lng, name, source, tz }
+let location = null; // { lat, lng, name, source, tz, message }
 let timer = null;
 let selectedDayOffset = 0;
 
@@ -46,19 +46,45 @@ async function save(loc) {
 
 function deviceLocation() {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Location isn't available in this browser."));
+    if (!navigator.geolocation) {
+      const error = new Error("Location isn't available in this browser.");
+      error.code = "unavailable";
+      return reject(error);
+    }
     navigator.geolocation.getCurrentPosition(
       (p) =>
         resolve({
           lat: p.coords.latitude,
           lng: p.coords.longitude,
-          name: "Your location",
+          name: null,
           source: "device",
         }),
-      () => reject(new Error("Couldn't get your location. Open a place in Google Maps, or allow location access.")),
+      (error) => {
+        const message =
+          error.code === GeolocationPositionError.PERMISSION_DENIED
+            ? "Location permission was denied. Allow access or open a place in Google Maps."
+            : "Couldn't determine your location. Check your connection or open a place in Google Maps.";
+        const locationError = new Error(message);
+        locationError.code = error.code === GeolocationPositionError.PERMISSION_DENIED ? "denied" : "unavailable";
+        reject(locationError);
+      },
       { timeout: 8000, maximumAge: 10 * 60 * 1000 },
     );
   });
+}
+
+async function reverseGeocode(lat, lng) {
+  const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=en`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const city = data.city || data.locality || data.principalSubdivision;
+    const region = data.principalSubdivisionCode?.replace(/^US-/, "") || data.countryCode;
+    return city && region ? `${city}, ${region}` : city || null;
+  } catch {
+    return null;
+  }
 }
 
 function setLocation(loc) {
@@ -104,6 +130,20 @@ function renderDayNavigation(date, tz) {
   $("previous-day").disabled = selectedDayOffset === 0;
 }
 
+function isTomorrow(date, now, timeZone) {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      timeZone,
+    });
+    const parts = (value) => {
+      const values = Object.fromEntries(formatter.formatToParts(value).map((part) => [part.type, part.value]));
+      return Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day));
+    };
+    return parts(date) - parts(now) === 24 * 60 * 60 * 1000;
+}
+
 function renderStatus(status, now, tz) {
   const box = $("status");
   const title = $("status-title");
@@ -120,10 +160,16 @@ function renderStatus(status, now, tz) {
     const n = status.next;
     box.classList.add(n.kind);
     title.textContent = `Next: ${n.label}`;
-    detail.textContent = `Starts in ${formatDuration(n.start - now)} (${formatTime(n.start, tz)})`;
+    const when = formatTime(n.start, tz);
+    detail.textContent = isTomorrow(n.start, now, tz)
+      ? `Starts tomorrow at ${when} (in ${formatDuration(n.start - now)})`
+      : `Starts in ${formatDuration(n.start - now)} (${when})`;
   } else if (status.nextSun) {
     title.textContent = `Next: ${status.nextSun.label}`;
-    detail.textContent = `In ${formatDuration(status.nextSun.time - now)} (${formatTime(status.nextSun.time, tz)})`;
+    const when = formatTime(status.nextSun.time, tz);
+    detail.textContent = isTomorrow(status.nextSun.time, now, tz)
+      ? `Tomorrow, ${when} (in ${formatDuration(status.nextSun.time - now)})`
+      : `In ${formatDuration(status.nextSun.time - now)} (${when})`;
   } else {
     title.textContent = "No sunrise or sunset today";
     detail.textContent = "The sun stays above or below the horizon at this latitude.";
@@ -163,9 +209,9 @@ function renderTimeline(times, now, tz) {
     seg.style.width = `${(right - left) * 100}%`;
     line.append(seg);
   }
-  for (const when of [times.sunrise, times.sunset]) {
+  for (const [when, direction] of [[times.sunrise, "sunrise"], [times.sunset, "sunset"]]) {
     if (!when) continue;
-    const tick = el("div", "sun-tick");
+    const tick = el("div", `sun-tick ${direction}`);
     tick.style.left = `${position(when) * 100}%`;
     line.append(tick);
   }
@@ -194,9 +240,9 @@ function renderTimeline(times, now, tz) {
 function renderRows(times, now, tz) {
   const rows = [];
   const addRange = (label, kind, range) =>
-    range && rows.push({ label, kind, sort: range.start, end: range.end, text: `${formatTime(range.start, tz)} – ${formatTime(range.end, tz)}` });
+    range && rows.push({ label, kind, group: label.startsWith("Morning") ? "Morning" : "Evening", sort: range.start, end: range.end, text: `${formatTime(range.start, tz)} – ${formatTime(range.end, tz)}` });
   const addPoint = (label, when) =>
-    when && rows.push({ label, kind: "sun", sort: when, end: when, text: formatTime(when, tz) });
+    when && rows.push({ label, kind: "sun", group: label === "Sunrise" ? "Morning" : "Evening", sort: when, end: when, text: formatTime(when, tz) });
 
   addRange("Morning blue hour", "blue", times.morningBlue);
   addRange("Morning golden hour", "golden", times.morningGolden);
@@ -208,10 +254,15 @@ function renderRows(times, now, tz) {
 
   const list = $("times");
   list.replaceChildren();
-  for (const row of rows) {
-    const li = el("li", now && row.end < now ? "past" : "");
-    li.append(el("span", `dot ${row.kind}`), el("span", "name", row.label), el("span", "when", row.text));
-    list.append(li);
+  for (const group of ["Morning", "Evening"]) {
+    const groupRows = rows.filter((row) => row.group === group);
+    if (groupRows.length === 0) continue;
+    list.append(el("li", "group-title", group));
+    for (const row of groupRows) {
+      const li = el("li", now && row.end < now ? "past" : "");
+      li.append(el("span", `dot ${row.kind}`), el("span", "name", row.label), el("span", "when", row.text));
+      list.append(li);
+    }
   }
   list.hidden = rows.length === 0;
 }
@@ -223,8 +274,8 @@ function render() {
   const selectedDate = getSelectedDate(now, tz, selectedDayOffset);
 
   $("place").textContent = location.name || "Selected location";
-  $("meta").textContent = "";
-  $("meta").hidden = true;
+  $("meta").textContent = location.message || "";
+  $("meta").hidden = !location.message;
   const times = getLightTimes(lat, lng, selectedDate);
   renderStatus(getStatus(lat, lng, now), now, tz);
   renderDayNavigation(selectedDate, tz);
@@ -237,9 +288,17 @@ function render() {
 async function useDevice() {
   try {
     const loc = await deviceLocation();
+    loc.name = await reverseGeocode(loc.lat, loc.lng);
+    if (!loc.name) {
+      loc.name = "Your location";
+      loc.message = "Place name unavailable offline.";
+    }
     await save(loc);
     setLocation(loc);
   } catch (err) {
+    $("place").textContent = err.code === "denied" ? "Location permission denied" : "Location unavailable";
+    $("meta").textContent = err.message;
+    $("meta").hidden = false;
     showError(err.message);
   }
 }
@@ -258,7 +317,8 @@ async function init() {
     return;
   }
   // 3. Otherwise ask the browser.
-  $("meta").textContent = "Finding your location…";
+  $("place").textContent = "Finding your location…";
+  $("meta").textContent = "Allow location access to find nearby light times.";
   $("meta").hidden = false;
   await useDevice();
 }

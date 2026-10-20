@@ -9,7 +9,13 @@ times for the location currently open in Google Maps.
 - Shows today's light phases in a compact timeline
 - Buttons to check days in the future
 - Displays local times using the location's time zone
+- Resolves device locations to an approximate nearby place name when online
+
+## Device coordinates
+Device coordinates are used locally for solar calculations. When device
+location is enabled, the extension optionally sends them to BigDataCloud to
+display an approximate place name; if that lookup is unavailable, the popup
+shows a friendly fallback instead.
 
 ## Planned expansions
-
 - Light Mode Theme

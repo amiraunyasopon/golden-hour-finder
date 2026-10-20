@@ -17,5 +17,6 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["activeTab", "storage", "geolocation"]
+  "permissions": ["activeTab", "storage", "geolocation"],
+  "host_permissions": ["https://api.bigdatacloud.net/"]
 }
