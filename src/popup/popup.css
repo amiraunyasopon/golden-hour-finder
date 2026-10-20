@@ -77,13 +77,48 @@ h1 {
 
 .timeline {
   position: relative;
-  height: 12px;
+  height: 16px;
   border: 1px solid var(--color-border);
   border-radius: 2px;
   background: var(--color-surface);
-  overflow: hidden;
+  overflow: visible;
 }
-.seg { position: absolute; top: 0; bottom: 0; }
+.seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.seg::after {
+  position: absolute;
+  z-index: 2;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  display: none;
+  padding: 5px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  content: attr(data-label);
+  font-size: 11px;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.seg.tooltip-left::after {
+  left: 0;
+  transform: none;
+}
+.seg.tooltip-right::after {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+.seg:hover::after,
+.seg:focus-visible::after {
+  display: block;
+}
 .seg.golden,
 .dot.golden { background: var(--color-golden-hour); }
 .seg.blue,
@@ -100,20 +135,26 @@ h1 {
 }
 .now {
   position: absolute;
-  top: -2px;
-  bottom: -2px;
+  top: -5px;
+  bottom: -5px;
   width: 2px;
-  border: 1px solid var(--color-text);
+  z-index: 1;
   background: var(--color-text);
 }
 
 .ticks {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  height: 17px;
   margin: 5px 0 13px;
   color: var(--color-text-muted);
   font-size: 10px;
 }
+.ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.ticks span.start { transform: translateX(0); }
+.ticks span.end { transform: translateX(-100%); }
 
 .times {
   list-style: none;

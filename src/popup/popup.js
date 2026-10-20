@@ -5,7 +5,6 @@ import {
   formatTime,
   formatDuration,
   formatCoords,
-  dayFraction,
 } from "../lib/format.js";
 
 const $ = (id) => document.getElementById(id);
@@ -112,19 +111,33 @@ function renderStatus(status, now, tz) {
 
 function renderTimeline(times, now, tz) {
   const line = $("timeline");
+  const ticks = $("timeline-ticks");
   line.replaceChildren();
+  ticks.replaceChildren();
+  const firstLight = times.morningBlue?.start || times.morningGolden?.start || times.sunrise;
+  const lastLight = times.eveningBlue?.end || times.eveningGolden?.end || times.sunset;
+  if (!firstLight || !lastLight || lastLight <= firstLight) {
+    $("timeline-wrap").hidden = true;
+    return;
+  }
+  const start = firstLight.getTime() - 60 * 60 * 1000;
+  const end = lastLight.getTime() + 60 * 60 * 1000;
+  const position = (date) => Math.max(0, Math.min(1, (date.getTime() - start) / (end - start)));
   const segments = [
-    [times.morningBlue, "blue"],
-    [times.morningGolden, "golden"],
-    [times.eveningGolden, "golden"],
-    [times.eveningBlue, "blue"],
+    [times.morningBlue, "blue", "Morning blue hour"],
+    [times.morningGolden, "golden", "Morning golden hour"],
+    [times.eveningGolden, "golden", "Evening golden hour"],
+    [times.eveningBlue, "blue", "Evening blue hour"],
   ];
-  for (const [range, kind] of segments) {
+  for (const [range, kind, label] of segments) {
     if (!range) continue;
-    const left = dayFraction(range.start, tz);
-    const right = dayFraction(range.end, tz);
+    const left = position(range.start);
+    const right = position(range.end);
     if (right <= left) continue;
-    const seg = el("div", `seg ${kind}`);
+    const alignment = left < 0.15 ? "tooltip-left" : right > 0.85 ? "tooltip-right" : "";
+    const seg = el("div", `seg ${kind} ${alignment}`);
+    seg.dataset.label = label;
+    seg.setAttribute("aria-label", label);
     seg.style.left = `${left * 100}%`;
     seg.style.width = `${(right - left) * 100}%`;
     line.append(seg);
@@ -132,12 +145,26 @@ function renderTimeline(times, now, tz) {
   for (const when of [times.sunrise, times.sunset]) {
     if (!when) continue;
     const tick = el("div", "sun-tick");
-    tick.style.left = `${dayFraction(when, tz) * 100}%`;
+    tick.style.left = `${position(when) * 100}%`;
     line.append(tick);
   }
   const marker = el("div", "now");
-  marker.style.left = `${dayFraction(now, tz) * 100}%`;
+  marker.style.left = `${position(now) * 100}%`;
   line.append(marker);
+  const labelTimes = [{ time: times.sunrise, className: "start" }];
+  if (times.sunrise && times.sunset) {
+    labelTimes.push({
+      time: new Date((times.sunrise.getTime() + times.sunset.getTime()) / 2),
+      className: "middle",
+    });
+  }
+  labelTimes.push({ time: times.sunset, className: "end" });
+  for (const { time, className } of labelTimes) {
+    if (!time) continue;
+    const label = el("span", className, formatTime(time, tz));
+    label.style.left = `${position(time) * 100}%`;
+    ticks.append(label);
+  }
   $("timeline-wrap").hidden = false;
 }
 
