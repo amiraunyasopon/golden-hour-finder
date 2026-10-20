@@ -3,8 +3,8 @@ import { getStatus, getLightTimes } from "../lib/sun.js";
 import {
   resolveTimeZone,
   formatTime,
+  formatDate,
   formatDuration,
-  formatCoords,
 } from "../lib/format.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +12,7 @@ const hasChrome = typeof chrome !== "undefined" && chrome.storage;
 
 let location = null; // { lat, lng, name, source, tz }
 let timer = null;
+let selectedDayOffset = 0;
 
 // ---------- location ----------
 
@@ -61,7 +62,9 @@ function deviceLocation() {
 }
 
 function setLocation(loc) {
-  location = { ...loc, tz: resolveTimeZone(loc.lat, loc.lng) };
+  const name = loc.name || (loc.source === "device" ? "Your location" : "Google Maps location");
+  location = { ...loc, name, tz: resolveTimeZone(loc.lat, loc.lng) };
+  selectedDayOffset = 0;
   showError("");
   render();
   clearInterval(timer);
@@ -81,6 +84,24 @@ function el(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function getSelectedDate(now, tz, dayOffset) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    timeZone: tz,
+  }).formatToParts(now);
+  const get = (type) => Number(parts.find((part) => part.type === type).value);
+  return new Date(Date.UTC(get("year"), get("month") - 1, get("day") + dayOffset, 12));
+}
+
+function renderDayNavigation(date, tz) {
+  const selectedDate = $("selected-date");
+  selectedDate.textContent = formatDate(date, tz);
+  selectedDate.dateTime = date.toISOString().slice(0, 10);
+  $("previous-day").disabled = selectedDayOffset === 0;
 }
 
 function renderStatus(status, now, tz) {
@@ -148,9 +169,11 @@ function renderTimeline(times, now, tz) {
     tick.style.left = `${position(when) * 100}%`;
     line.append(tick);
   }
-  const marker = el("div", "now");
-  marker.style.left = `${position(now) * 100}%`;
-  line.append(marker);
+  if (now) {
+    const marker = el("div", "now");
+    marker.style.left = `${position(now) * 100}%`;
+    line.append(marker);
+  }
   const labelTimes = [{ time: times.sunrise, className: "start" }];
   if (times.sunrise && times.sunset) {
     labelTimes.push({
@@ -186,7 +209,7 @@ function renderRows(times, now, tz) {
   const list = $("times");
   list.replaceChildren();
   for (const row of rows) {
-    const li = el("li", row.end < now ? "past" : "");
+    const li = el("li", now && row.end < now ? "past" : "");
     li.append(el("span", `dot ${row.kind}`), el("span", "name", row.label), el("span", "when", row.text));
     list.append(li);
   }
@@ -197,13 +220,16 @@ function render() {
   if (!location) return;
   const now = new Date();
   const { lat, lng, tz } = location;
+  const selectedDate = getSelectedDate(now, tz, selectedDayOffset);
 
   $("place").textContent = location.name || "Selected location";
-  $("meta").textContent = `${formatCoords(lat, lng)} · ${tz}`;
-  const times = getLightTimes(lat, lng, now);
+  $("meta").textContent = "";
+  $("meta").hidden = true;
+  const times = getLightTimes(lat, lng, selectedDate);
   renderStatus(getStatus(lat, lng, now), now, tz);
-  renderTimeline(times, now, tz);
-  renderRows(times, now, tz);
+  renderDayNavigation(selectedDate, tz);
+  renderTimeline(times, selectedDayOffset === 0 ? now : null, tz);
+  renderRows(times, selectedDayOffset === 0 ? now : null, tz);
 }
 
 // ---------- startup and events ----------
@@ -233,7 +259,19 @@ async function init() {
   }
   // 3. Otherwise ask the browser.
   $("meta").textContent = "Finding your location…";
+  $("meta").hidden = false;
   await useDevice();
 }
 
 init();
+
+$("previous-day").addEventListener("click", () => {
+  if (selectedDayOffset === 0) return;
+  selectedDayOffset -= 1;
+  render();
+});
+
+$("next-day").addEventListener("click", () => {
+  selectedDayOffset += 1;
+  render();
+});
