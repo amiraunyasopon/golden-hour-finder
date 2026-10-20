@@ -3,6 +3,8 @@
 A browser extension that shows golden hour, blue hour, sunrise, and sunset
 times for the location currently open in Google Maps.
 
+<img src="./public/golden-hour-finder-image.png" alt="Golden Hour Finder popup" width="320" />
+
 ## Features
 
 - Reads a place pin, search result, or map view from the active Google Maps tab
