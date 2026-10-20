@@ -289,14 +289,7 @@ function render() {
 async function useDevice() {
   try {
     const loc = await deviceLocation();
-    const place = await reverseGeocode(loc.lat, loc.lng);
-    loc.name = place?.name;
-    if (!place) {
-      loc.name = "Your location";
-      loc.message = "Place name unavailable offline.";
-    } else {
-      loc.message = "Place name from OpenStreetMap.";
-    }
+    await addDevicePlaceName(loc);
     await save(loc);
     setLocation(loc);
   } catch (err) {
@@ -305,6 +298,12 @@ async function useDevice() {
     $("meta").hidden = false;
     showError(err.message);
   }
+}
+
+async function addDevicePlaceName(loc) {
+  const place = await reverseGeocode(loc.lat, loc.lng);
+  loc.name = place?.name || "Your location";
+  loc.message = place ? "" : "Location name unavailable offline.";
 }
 
 async function init() {
@@ -317,6 +316,10 @@ async function init() {
   // 2. Otherwise the last location they chose.
   const saved = await loadSaved();
   if (saved) {
+    if (saved.source === "device") {
+      await addDevicePlaceName(saved);
+      await save(saved);
+    }
     setLocation(saved);
     return;
   }
