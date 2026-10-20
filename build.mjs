@@ -4,8 +4,9 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 rmSync("dist", { recursive: true, force: true });
 mkdirSync("dist/popup", { recursive: true });
 
-// Static files: manifest + icons, popup markup and styles.
-cpSync("public", "dist", { recursive: true });
+// Static files: only runtime assets belong in the production package.
+cpSync("public/manifest.json", "dist/manifest.json");
+cpSync("public/icons", "dist/icons", { recursive: true });
 cpSync("src/popup/popup.html", "dist/popup/popup.html");
 cpSync("src/popup/popup.css", "dist/popup/popup.css");
 

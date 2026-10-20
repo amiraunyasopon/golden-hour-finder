@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test",
-    "zip": "npm run build && cd dist && zip -r ../golden-hour-finder.zip ."
+    "zip": "npm run build && rm -f golden-hour-finder.zip && cd dist && zip -r ../golden-hour-finder.zip ."
   },
   "keywords": [],
   "author": "",
