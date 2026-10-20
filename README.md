@@ -1,4 +1,4 @@
-# Light Times Overlay
+# Golden Hour Finder
 
 A browser extension that shows golden hour, blue hour, sunrise, and sunset
 times for the location currently open in Google Maps.
@@ -20,16 +20,3 @@ data handling summary.
 
 ## Planned expansions
 - Light Mode Theme
-
-## Store launch notes
-
-Permissions used by the extension:
-
-- `activeTab`: reads the active Google Maps URL to identify a location.
-- `storage`: saves the last selected location locally.
-- `geolocation`: calculates light times for the user's device location.
-- Nominatim host access: converts device coordinates into an approximate
-  city or locality name when the user uses device location.
-
-The extension does not use remote code, analytics, advertising, or a custom
-backend.
