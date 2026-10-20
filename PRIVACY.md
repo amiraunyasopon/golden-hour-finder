@@ -8,22 +8,36 @@ to provide that feature.
 
 ## Information the extension uses
 
-- A Google Maps URL from the active tab, when the active tab is a Google Maps
-  location. The extension reads coordinates and an available place name from
-  the URL; it does not read page contents.
-- Device location, only when the browser provides it for the location feature.
-- The selected location is saved in Chrome's local extension storage so it can
-  be reused when the popup opens again.
+- The URL of the active tab, when it is a Google Maps URL. The extension
+  examines the URL locally to extract coordinates and an available place name;
+  it does not read Google Maps page contents.
+- Device location, when the browser provides it after the user grants location
+  permission. If there is no usable Google Maps location or saved device
+  location, the extension may ask the browser for permission to use device
+  location.
+- For device locations, the extension may save the latitude, longitude,
+  location source, and approximate place name in Chrome's local extension
+  storage so the location can be reused when the popup opens again.
+
+Sunrise, sunset, golden-hour, blue-hour, and time-zone calculations are
+performed locally in the extension.
 
 ## Reverse geocoding
 
-When device location is used, the extension may send the device coordinates to
-OpenStreetMap's Nominatim reverse-geocoding service to obtain an approximate
-city or locality name. The extension does not send coordinates for Google Maps
-locations to this service.
+When device location is used, the extension may send the device's latitude and
+longitude to OpenStreetMap's Nominatim reverse-geocoding service to obtain an
+approximate city or locality name. The extension does not send coordinates
+parsed from Google Maps URLs to Nominatim.
 
-The reverse-geocoded place name is shown in the popup with OpenStreetMap
-attribution. Nominatim's use is subject to the
+The extension may make this request again when refreshing the approximate
+place name for a saved device location. The request is made only for reverse
+geocoding; Golden Hour Finder does not use the result to create an account,
+profile, or location history.
+
+The reverse-geocoded place name is used to show an approximate locality in the
+popup. Nominatim is an independent service. Its handling of requests,
+including network metadata and any retention or use of request data, is
+governed by the
 [OpenStreetMap Foundation Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/).
 
 ## What the extension does not do
@@ -34,16 +48,20 @@ Golden Hour Finder does not:
 - Sell location information.
 - Use advertising or analytics trackers.
 - Collect browsing history.
-- Transmit location data to a service other than the optional reverse-geocoding
-  request described above.
+- Transmit location coordinates to a service other than the optional Nominatim
+  reverse-geocoding request described above.
 
 ## Local storage and deletion
 
-The last selected location remains in Chrome's extension storage. Users can
-remove it by clearing the extension's site data in Chrome or uninstalling the
-extension.
+The saved device location remains in Chrome's local extension storage. Users
+can remove it by removing the extension's stored data through Chrome's
+extension or site-data controls, or by uninstalling the extension. The
+extension does not maintain a server-side account or location history.
+Reverse-geocoding requests are used only to obtain the approximate locality
+name and are not used by Golden Hour Finder to build a user profile.
 
 ## Contact
 
 **Publisher:** Amir Aunyasopon
+
 **Contact:** amiraunyasopon@gmail.com
