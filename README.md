@@ -5,6 +5,9 @@ times for the location currently open in Google Maps.
 
 <img src="./public/golden-hour-finder-image-2.png" alt="Golden Hour Finder popup" />
 
+## Download it for Free
+- Chrome Web Store: https://chromewebstore.google.com/detail/golden-hour-finder/clbpipfdlddckklpipheeabpdbnmikjj
+
 ## Features
 
 - Reads a place pin, search result, or map view from the active Google Maps tab
