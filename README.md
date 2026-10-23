@@ -7,6 +7,7 @@ times for the location currently open in Google Maps.
 
 ## Download it for Free
 - Chrome Web Store: https://chromewebstore.google.com/detail/golden-hour-finder/clbpipfdlddckklpipheeabpdbnmikjj
+- Firefox Browser Add-Ons: https://addons.mozilla.org/en-US/firefox/addon/golden-hour-finder/
 
 ## Features
 
